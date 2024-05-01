@@ -1,0 +1,111 @@
+-- 1: Columns ROW_JSON_A and ROW_JSON_B has different schemas so you can flatten JSON only for each.
+--    Of course you can join these flattened result sets by using subqueries.
+-- 2: You have to define column name for each JSON schema.
+
+-- Query for flattening ROW_JSON_A
+select 
+    test_run_id, 
+    row_id, 
+    fail_reason, 
+    value, 
+    value:A_DATA.ACCOUNT, -- Define your self
+    value:A_DATA.ACCOUNT_NAME, -- Define your self
+    value:A_DATA.AGGREGATE_WELLNESS_POINTS, -- Define your self
+    value:A_DATA.BENEFIT_YEAR_DESC, -- Define your self
+    value:A_DATA.CDHP_OFFERED_CODE, -- Define your self
+    value:A_DATA.CDH_PLAN_ID, -- Define your self
+    value:A_DATA.DEPENDENT_FIRST_NAME, -- Define your self
+    value:A_DATA.DEPENDENT_ID, -- Define your self
+    value:A_DATA.DEPENDENT_LAST_NAME, -- Define your self
+    value:A_DATA.DEPENDENT_MIDDLE_NAME, -- Define your self
+    value:A_DATA.SUBSCRIBER_FIRST_NAME, -- Define your self
+    value:A_DATA.SUBSCRIBER_ID, -- Define your self
+    value:A_DATA.SUBSCRIBER_LAST_NAME, -- Define your self
+    value:A_DATA.SUBSCRIBER_MIDDLE_NAME, -- Define your self
+from 
+    LANDINGDEV_MIGRATION.SHARED_SCHEMA.AB_TEST_ROW_REJECT_DETAIL,
+    lateral flatten (input => row_json_a)
+where 
+    value:A_DATA.ACCOUNT is not null  -- Define your self
+order by
+    test_run_id desc,
+    fail_reason asc
+;
+
+-- Query for flattening ROW_JSON_B
+select 
+    test_run_id, 
+    row_id, 
+    fail_reason, 
+    value, 
+    value:B_DATA.ACCOUNT, -- Define your self
+    value:B_DATA.ACCOUNT_NAME, -- Define your self
+    value:B_DATA.AGGREGATE_WELLNESS_POINTS, -- Define your self
+    value:B_DATA.BENEFIT_YEAR_DESC, -- Define your self
+    value:B_DATA.CDHP_OFFERED_CODE, -- Define your self
+    value:B_DATA.CDH_PLAN_ID, -- Define your self
+    value:B_DATA.DEPENDENT_FIRST_NAME, -- Define your self
+    value:B_DATA.DEPENDENT_ID, -- Define your self
+    value:B_DATA.DEPENDENT_LAST_NAME, -- Define your self
+    value:B_DATA.DEPENDENT_MIDDLE_NAME, -- Define your self
+    value:B_DATA.SUBSCRIBER_FIRST_NAME, -- Define your self
+    value:B_DATA.SUBSCRIBER_ID, -- Define your self
+    value:B_DATA.SUBSCRIBER_LAST_NAME, -- Define your self
+    value:B_DATA.SUBSCRIBER_MIDDLE_NAME, -- Define your self
+from 
+    LANDINGDEV_MIGRATION.SHARED_SCHEMA.AB_TEST_ROW_REJECT_DETAIL,
+    lateral flatten (input => row_json_b)
+where 
+    value:B_DATA.ACCOUNT is not null -- Define your self
+order by
+    test_run_id desc,
+    fail_reason asc
+;
+
+
+
+Flatten for XML file 
+
+select 
+    xmlget(xml_data, 'NPI'):"$"::varchar as NPI,
+    xmlget(xml_data, 'ProviderCategory'):"$"::varchar as ProviderCategory,
+    xmlget(xml_data, 'ProviderFirstName'):"$"::varchar as ProviderFirstName,
+    xmlget(xml_data, 'ProviderMiddleInitial'):"$"::varchar as ProviderMiddleInitial,
+    xmlget(xml_data, 'ProviderLastName'):"$"::varchar as ProviderLastName,
+    xmlget(xml_data, 'NonprofressionalProviderName'):"$"::varchar  as NonprofressionalProviderName,
+--    xmlget(xml_data, 'ProviderTypes'):"$" as ProviderTypes,
+    get(ProviderTypes.value,'$')::varchar as ProviderType,
+--    xmlget(xml_data, 'ProviderSpecialties'):"$" as ProviderSpecialties,
+    get(ProviderSpecialties.value, '$')::varchar as ProviderSpecialty,
+    xmlget(xml_data, 'Gender'):"$"::varchar as Gender,
+--    xmlget(xml_data, 'EducationDegrees'):"$"  as EducationDegrees,
+    get(EducationDegrees.value, '$')::varchar as EducationDegree,
+--    xmlget(xml_data, 'Languages'):"$" as Languages,
+    get(Languages.value, '$')::varchar as Language,
+--    xmlget(xml_data, 'HospitalAffiliations'):"$" as HospitalAffiliations,
+    get(HospitalAffiliations.value, '$')::varchar as HospitalAffiliation,
+--    xmlget(xml_data, 'OtherAffiliations'):"$" as OtherAffiliations,
+    get(OtherAffiliations.value, '@name')::varchar as OtherAffiliation,
+--    xmlget(OtherAffiliations.value, 'Addresses'):"$" as Addresses,
+--    get(Addresses.value, '$') as Address,
+    get(xmlget(Addresses.value, 'PatientCenteredMedicalHome'), '$')::varchar as PatientCenteredMedicalHome,
+    get(xmlget(Addresses.value, 'StreetAddress1'), '$')::varchar as StreetAddress1,
+    get(xmlget(Addresses.value, 'StreetAddress2'), '$')::varchar as StreetAddress2,
+    get(xmlget(Addresses.value, 'City'), '$')::varchar as City,
+    get(xmlget(Addresses.value, 'State'), '$')::varchar as State,
+    get(xmlget(Addresses.value, 'Zipcode'), '$')::varchar as Zipcode,
+    get(xmlget(Addresses.value, 'Telephone'), '$')::varchar as Telephone,
+--    xmlget(Addresses.value, 'Networks'):"$" as Networks,
+    get(xmlget(Networks.value, 'NetworkID'), '$')::varchar as NetworkID,
+    xmlget(xml_data, 'AcceptingNewPatients'):"$"::varchar as AcceptingNewPatients,
+from 
+    landingdev_migration.shared_schema.ab_test_xml_flat_test,
+    lateral flatten(xmlget(xml_data, 'ProviderTypes'):"$"::array) ProviderTypes,
+    lateral flatten(xmlget(xml_data, 'ProviderSpecialties'):"$"::array) ProviderSpecialties,
+    lateral flatten(xmlget(xml_data, 'EducationDegrees'):"$"::array) EducationDegrees,
+    lateral flatten(xmlget(xml_data, 'Languages'):"$"::array) Languages,
+    lateral flatten(xmlget(xml_data, 'HospitalAffiliations'):"$"::array) HospitalAffiliations,
+    lateral flatten(xmlget(xml_data, 'OtherAffiliations'):"$"::array) OtherAffiliations,
+    lateral flatten(xmlget(OtherAffiliations.value, 'Addresses'):"$"::array) Addresses,
+    lateral flatten(xmlget(Addresses.value, 'Networks'):"$"::array) Networks,
+;
