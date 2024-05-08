@@ -1,0 +1,66 @@
+###################################
+#ignore_ranges=[(361,375)] # USE WHEN WE WANT TO IGNORE POSITIONS/COLUMNS by POSITION     ######
+#############################
+ignore_ranges=[] #use when we dont want to ignore any columns/positions ############################
+
+
+
+#comparison_name='medbDrug'
+
+comparison_name='HCR_IND_JUNK'
+
+####################################################3333333
+
+file_a_path=r'O:\downloads\DS_1095b_extract (1).txt'
+file_b_path=r'O:\downloads\MT_1095b_extract (1).txt'
+
+###########################################################################
+output_path_AminusB=f'C:\\Users\\UN0ATSO\\Downloads\\'+comparison_name+'AminusB.txt'
+output_path_BminusA=f'C:\\Users\\UN0ATSO\\Downloads\\'+comparison_name+'BminusA.txt'
+matched_records_file=f'C:\\Users\\UN0ATSO\\Downloads\\'+comparison_name+'matched_records.txt'
+
+def ignore_positions(line,ranges):
+    if not ranges:
+        return line
+    else:
+        for start_pos,end_pos in sorted(ranges,reverse=True):
+            line=line[:start_pos]+line[end_pos:]
+        return line
+
+
+def read_file_to_set_w_header(file_path,ignore_ranges):
+    with open(file_path,'r') as file:
+        lines=file.readlines()
+        header=lines[0]
+        modified_lines={ignore_positions(line,ignore_ranges) for line in lines[1:]}
+        return modified_lines,header
+set_a,header_a=read_file_to_set_w_header(file_a_path,ignore_ranges)   
+set_b,header_b=read_file_to_set_w_header(file_b_path,ignore_ranges)
+
+unmatched_a_minus_b=sorted(set_a-set_b)
+unmatched_b_minus_a=sorted(set_b-set_a)
+matched_records=set_a.intersection(set_b)
+print(len(matched_records)," is the number of matched records between A and B for ",comparison_name)
+print(len(set_a)," is total count of records in A")
+print(len(set_b), " is total count of records in B")
+print(len(unmatched_a_minus_b), " is count of A -B")
+print(len(unmatched_b_minus_a), " is count of B-A")
+
+#print(set_a)
+
+with open(output_path_AminusB,'w') as output_file_a_minus_b:
+    output_file_a_minus_b.write(header_a)
+    for line in unmatched_a_minus_b:
+        output_file_a_minus_b.write(line)
+        
+with open(output_path_BminusA,'w') as output_file_b_minus_a:
+    output_file_b_minus_a.write(header_b)
+    for line in unmatched_b_minus_a:
+        output_file_b_minus_a.write(line)
+
+with open(matched_records_file,'w') as matched_records_file_op:
+    matched_records_file_op.write(header_b)
+    for line in matched_records:
+        matched_records_file_op.write(line)
+#print(matched_records)
+Collapse
